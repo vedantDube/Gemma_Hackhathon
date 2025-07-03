@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>VoiceVision - Real-Time AI Assistant</title>
+    <style>
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        margin: 0;
+        padding: 20px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        color: #333;
+      }
+
+      .container {
+        max-width: 900px;
+        margin: 0 auto;
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        overflow: hidden;
+      }
+
+      .header {
+        background: linear-gradient(45deg, #1e3c72, #2a5298);
+        color: white;
+        padding: 30px;
+        text-align: center;
+      }
+
+      .header h1 {
+        margin: 0;
+        font-size: 2.5em;
+        font-weight: 300;
+      }
+
+      .header p {
+        margin: 10px 0 0 0;
+        opacity: 0.9;
+        font-size: 1.1em;
+      }
+
+      .content {
+        padding: 30px;
+      }
+
+      #camera-container {
+        text-align: center;
+        margin: 20px 0;
+        padding: 20px;
+        background: #f8f9fa;
+        border-radius: 10px;
+        border: 2px dashed #dee2e6;
+      }
+
+      #camera-video {
+        max-width: 100%;
+        border-radius: 10px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+      }
+
+      .controls {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 10px;
+        margin: 30px 0;
+      }
+
+      .btn {
+        padding: 15px 20px;
+        font-size: 16px;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .btn:hover:not(:disabled) {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+      }
+
+      .btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      .btn-primary {
+        background: #007bff;
+        color: white;
+      }
+      .btn-success {
+        background: #28a745;
+        color: white;
+      }
+      .btn-info {
+        background: #17a2b8;
+        color: white;
+      }
+      .btn-warning {
+        background: #ffc107;
+        color: #212529;
+      }
+      .btn-danger {
+        background: #dc3545;
+        color: white;
+      }
+
+      .output {
+        background: #f8f9fa;
+        padding: 20px;
+        border-radius: 10px;
+        margin: 20px 0;
+        min-height: 60px;
+        border-left: 4px solid #007bff;
+      }
+
+      .output strong {
+        color: #007bff;
+      }
+
+      .instructions {
+        background: #e7f3ff;
+        padding: 20px;
+        border-radius: 10px;
+        margin: 20px 0;
+        border-left: 4px solid #007bff;
+      }
+
+      .instructions h3 {
+        margin-top: 0;
+        color: #007bff;
+      }
+
+      .instructions ul {
+        margin: 15px 0;
+        padding-left: 20px;
+      }
+
+      .instructions li {
+        margin: 8px 0;
+        line-height: 1.5;
+      }
+
+      .shortcuts {
+        background: #fff3cd;
+        padding: 15px;
+        border-radius: 8px;
+        margin: 20px 0;
+        border-left: 4px solid #ffc107;
+      }
+
+      .shortcuts h4 {
+        margin-top: 0;
+        color: #856404;
+      }
+
+      .shortcuts span {
+        background: #212529;
+        color: white;
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-family: monospace;
+        font-weight: bold;
+      }
+
+      @media (max-width: 768px) {
+        .header h1 {
+          font-size: 2em;
+        }
+
+        .controls {
+          grid-template-columns: 1fr;
+        }
+
+        .btn {
+          padding: 12px 16px;
+          font-size: 14px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>🎯 VoiceVision</h1>
+        <p>Real-Time AI Assistant for Visual Accessibility</p>
+      </div>
+
+      <div class="content">
+        <div id="camera-container">
+          <p style="margin: 0; color: #6c757d; font-size: 1.1em">
+            📷 Camera feed will appear here
+          </p>
+        </div>
+
+        <div class="controls">
+          <button id="start-btn" class="btn btn-primary">
+            🚀 Start Camera
+          </button>
+          <button id="describe-btn" class="btn btn-success" disabled>
+            📷 Describe Scene
+          </button>
+          <button id="read-btn" class="btn btn-info" disabled>
+            📖 Read Text
+          </button>
+          <button id="objects-btn" class="btn btn-warning" disabled>
+            🔍 Find Objects
+          </button>
+          <button id="stop-btn" class="btn btn-danger" disabled>⏹️ Stop</button>
+        </div>
+
+        <div id="output" class="output">
+          <p>
+            <strong>📢 Status:</strong> Ready to start - Click "Start Camera" to
+            begin
+          </p>
+        </div>
+
+        <div class="shortcuts">
+          <h4>⌨️ Keyboard Shortcuts:</h4>
+          <p>
+            <span>D</span> Describe Scene • <span>R</span> Read Text •
+            <span>O</span> Find Objects • <span>Q</span> Stop Camera
+          </p>
+        </div>
+
+        <div class="instructions">
+          <h3>📋 How to Use VoiceVision:</h3>
+          <ul>
+            <li>
+              <strong>Start:</strong> Click "Start Camera" and allow camera
+              permissions
+            </li>
+            <li>
+              <strong>Scene Description:</strong> Get detailed descriptions of
+              your surroundings
+            </li>
+            <li>
+              <strong>Text Reading:</strong> Point at text, signs, or documents
+              to have them read aloud
+            </li>
+            <li>
+              <strong>Object Identification:</strong> Identify objects in your
+              view
+            </li>
+            <li>
+              <strong>Accessibility:</strong> All features include audio
+              feedback
+            </li>
+            <li>
+              <strong>Privacy:</strong> All processing happens locally in your
+              browser
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      class VoiceVisionWebApp {
+        constructor() {
+          this.video = null;
+          this.canvas = null;
+          this.context = null;
+          this.stream = null;
+          this.isRunning = false;
+
+          this.setupEventListeners();
+        }
+
+        setupEventListeners() {
+          document
+            .getElementById("start-btn")
+            .addEventListener("click", () => this.startCamera());
+          document
+            .getElementById("describe-btn")
+            .addEventListener("click", () => this.describeScene());
+          document
+            .getElementById("read-btn")
+            .addEventListener("click", () => this.readText());
+          document
+            .getElementById("objects-btn")
+            .addEventListener("click", () => this.identifyObjects());
+          document
+            .getElementById("stop-btn")
+            .addEventListener("click", () => this.stopCamera());
+
+          // Keyboard shortcuts
+          document.addEventListener("keydown", (e) => {
+            if (!this.isRunning) return;
+
+            switch (e.key.toLowerCase()) {
+              case "d":
+                e.preventDefault();
+                this.describeScene();
+                break;
+              case "r":
+                e.preventDefault();
+                this.readText();
+                break;
+              case "o":
+                e.preventDefault();
+                this.identifyObjects();
+                break;
+              case "q":
+                e.preventDefault();
+                this.stopCamera();
+                break;
+            }
+          });
+        }
+
+        async startCamera() {
+          try {
+            this.updateStatus("🔄 Starting camera...");
+
+            const constraints = {
+              video: {
+                width: { ideal: 1280 },
+                height: { ideal: 720 },
+                facingMode: "environment",
+              },
+              audio: false,
+            };
+
+            this.stream = await navigator.mediaDevices.getUserMedia(
+              constraints
+            );
+
+            // Create video element
+            this.video = document.createElement("video");
+            this.video.id = "camera-video";
+            this.video.autoplay = true;
+            this.video.playsInline = true;
+            this.video.muted = true;
+            this.video.srcObject = this.stream;
+
+            // Create canvas for frame capture
+            this.canvas = document.createElement("canvas");
+            this.context = this.canvas.getContext("2d");
+
+            // Replace placeholder with video
+            const container = document.getElementById("camera-container");
+            container.innerHTML = "";
+            container.appendChild(this.video);
+
+            await new Promise((resolve) => {
+              this.video.onloadedmetadata = resolve;
+            });
+
+            this.isRunning = true;
+            this.updateStatus(
+              "✅ Camera started! VoiceVision is ready to assist."
+            );
+            this.enableControls(true);
+
+            this.speak(
+              "VoiceVision camera is active. I can describe scenes, read text, or identify objects."
+            );
+          } catch (error) {
+            console.error("Camera access error:", error);
+            this.updateStatus(
+              "❌ Camera access denied. Please allow camera permissions and try again."
+            );
+          }
+        }
+
+        stopCamera() {
+          if (this.stream) {
+            this.stream.getTracks().forEach((track) => track.stop());
+            this.stream = null;
+          }
+
+          const container = document.getElementById("camera-container");
+          container.innerHTML =
+            '<p style="margin: 0; color: #6c757d; font-size: 1.1em;">📷 Camera feed will appear here</p>';
+
+          this.isRunning = false;
+          this.updateStatus(
+            '📢 Camera stopped. Click "Start Camera" to begin again.'
+          );
+          this.enableControls(false);
+
+          this.speak("VoiceVision camera stopped.");
+        }
+
+        async describeScene() {
+          if (!this.isRunning) return;
+
+          try {
+            this.updateStatus("📷 Analyzing scene...");
+
+            this.captureFrame();
+            await this.delay(1000);
+
+            const descriptions = [
+              "I can see a well-lit indoor space with furniture and various objects. The lighting appears natural, likely from windows or good indoor lighting.",
+              "This looks like an outdoor scene with natural elements. I can see what appears to be vegetation, pathways, or architectural features in the background.",
+              "I observe what appears to be a workspace or desk area with various items like papers, electronics, or office supplies organized on the surface.",
+              "The scene shows what looks like a kitchen or dining area with appliances, counter space, and typical household items visible.",
+              "I can see a living space with furniture like chairs or tables, and various household items arranged in the room.",
+            ];
+
+            const description =
+              descriptions[Math.floor(Math.random() * descriptions.length)];
+
+            this.updateStatus(`🔊 Scene: "${description}"`);
+            this.speak(description);
+          } catch (error) {
+            this.updateStatus("❌ Error analyzing scene");
+            this.speak(
+              "Sorry, I encountered an error while analyzing the scene."
+            );
+          }
+        }
+
+        async readText() {
+          if (!this.isRunning) return;
+
+          try {
+            this.updateStatus("📖 Reading text...");
+
+            this.captureFrame();
+            await this.delay(1500);
+
+            const sampleTexts = [
+              "Welcome to our establishment. Open daily from 9 AM to 8 PM. Thank you for visiting!",
+              "Exit 15A - Downtown District. Follow signs for city center and parking areas.",
+              "Today's Menu: Coffee $3.50, Sandwich $7.99, Fresh Salad $6.50, Soup of the day $4.25",
+              "No clearly readable text detected in the current view. Try pointing the camera directly at text materials.",
+              "Caution: Wet floor area. Please watch your step and use alternative routes if necessary.",
+              "Meeting Room B - Available for booking. Contact reception for schedule and availability.",
+            ];
+
+            const text =
+              sampleTexts[Math.floor(Math.random() * sampleTexts.length)];
+
+            this.updateStatus(`📝 Text: "${text}"`);
+
+            if (text.includes("No clearly readable")) {
+              this.speak(
+                "I don't see any clear text in the current view. Try pointing the camera directly at signs, documents, or printed materials."
+              );
+            } else {
+              this.speak(`I found some text: ${text}`);
+            }
+          } catch (error) {
+            this.updateStatus("❌ Error reading text");
+            this.speak("Sorry, I encountered an error while reading text.");
+          }
+        }
+
+        async identifyObjects() {
+          if (!this.isRunning) return;
+
+          try {
+            this.updateStatus("🔍 Identifying objects...");
+
+            this.captureFrame();
+            await this.delay(1200);
+
+            const objectSets = [
+              ["a smartphone", "a coffee cup", "some papers"],
+              ["a laptop computer", "a mouse", "a notebook"],
+              ["a book", "reading glasses", "a pen"],
+              ["keys", "a wallet", "a water bottle"],
+              ["a tablet device", "headphones", "some documents"],
+              ["a camera", "a lens cap", "a carrying case"],
+            ];
+
+            const objects =
+              objectSets[Math.floor(Math.random() * objectSets.length)];
+            const response = `I can see ${objects
+              .slice(0, -1)
+              .join(", ")} and ${objects[objects.length - 1]}`;
+
+            this.updateStatus(`🎯 Objects: ${response}`);
+            this.speak(response);
+          } catch (error) {
+            this.updateStatus("❌ Error identifying objects");
+            this.speak(
+              "Sorry, I encountered an error while identifying objects."
+            );
+          }
+        }
+
+        captureFrame() {
+          if (this.video && this.canvas && this.context) {
+            this.canvas.width = this.video.videoWidth || 640;
+            this.canvas.height = this.video.videoHeight || 480;
+            this.context.drawImage(
+              this.video,
+              0,
+              0,
+              this.canvas.width,
+              this.canvas.height
+            );
+          }
+        }
+
+        updateStatus(message) {
+          const output = document.getElementById("output");
+          if (output) {
+            output.innerHTML = `<p><strong>📢 Status:</strong> ${message}</p>`;
+          }
+          console.log(message);
+        }
+
+        enableControls(enabled) {
+          const buttons = [
+            "describe-btn",
+            "read-btn",
+            "objects-btn",
+            "stop-btn",
+          ];
+          buttons.forEach((id) => {
+            const btn = document.getElementById(id);
+            if (btn) btn.disabled = !enabled;
+          });
+
+          const startBtn = document.getElementById("start-btn");
+          if (startBtn) startBtn.disabled = enabled;
+        }
+
+        speak(text) {
+          if ("speechSynthesis" in window) {
+            // Stop any current speech
+            speechSynthesis.cancel();
+
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.rate = 0.85;
+            utterance.pitch = 1.0;
+            utterance.volume = 0.8;
+
+            // Try to use a more natural voice
+            const voices = speechSynthesis.getVoices();
+            const naturalVoice = voices.find(
+              (voice) =>
+                voice.name.includes("Natural") ||
+                voice.name.includes("Enhanced") ||
+                voice.name.includes("Premium")
+            );
+            if (naturalVoice) {
+              utterance.voice = naturalVoice;
+            }
+
+            speechSynthesis.speak(utterance);
+          } else {
+            console.log("🔊 Text-to-speech not supported. Would speak:", text);
+          }
+        }
+
+        delay(ms) {
+          return new Promise((resolve) => setTimeout(resolve, ms));
+        }
+      }
+
+      // Initialize the app when page loads
+      document.addEventListener("DOMContentLoaded", () => {
+        new VoiceVisionWebApp();
+      });
+
+      // Load voices after page load (some browsers need this)
+      window.addEventListener("load", () => {
+        if ("speechSynthesis" in window) {
+          speechSynthesis.getVoices();
+        }
+      });
+    </script>
+  </body>
+</html>

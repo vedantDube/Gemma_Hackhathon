@@ -42,6 +42,18 @@ VoiceVision is an innovative **browser-based AI companion** designed specificall
 - **Keyboard Accessibility**: Full keyboard navigation support
 - **Touch-Friendly Interface**: Large buttons optimized for accessibility
 
+### 🤟 Sign Language Support (NEW!)
+
+- **Real-time Hand Tracking**: MediaPipe-powered gesture recognition
+- **Gesture Commands**: Control the app using sign language gestures
+- **Deaf-Blind Accessibility**: Enables interaction for users with both visual and hearing impairments
+- **Intuitive Gestures**: Simple finger patterns for common commands:
+  - **Index finger**: Describe scene
+  - **Two fingers**: Read text
+  - **Pinky finger**: Identify objects
+  - **All fingers**: Stop camera
+  - **Thumb only**: Repeat last description
+
 ### 🔒 Privacy-First Design
 
 - **On-Device Processing**: All AI computations happen locally
@@ -127,8 +139,26 @@ npm start
 - **D** - Describe current scene
 - **R** - Read text in view
 - **O** - Identify objects
-- **H** - Show help
-- **Q** - Stop application
+- **Q** - Stop camera
+- **S** - Stop speech
+- **Space** - Repeat last description
+
+### 🤟 Sign Language Controls
+
+When sign language is enabled, you can use these gestures:
+
+- **👆 Index finger pointing up** - Describe scene
+- **✌️ Index + middle finger** - Read text
+- **🤙 Pinky finger** - Identify objects
+- **✋ All fingers open** - Stop camera
+- **👍 Thumb only** - Repeat last description
+
+To enable sign language:
+
+1. Click the "🤟 Sign Language: OFF" button
+2. Allow additional camera permissions for hand tracking
+3. Position your hand clearly in front of the camera
+4. Hold gestures for 2-3 seconds for recognition
 
 ## 🎯 How It Works
 
@@ -137,8 +167,9 @@ npm start
 1. **Camera Capture**: WebRTC API captures real-time video frames
 2. **TensorFlow.js Processing**: COCO-SSD model detects 80+ object types
 3. **Tesseract.js OCR**: Extracts and reads text from images
-4. **Scene Analysis**: Combines object detection with lighting analysis
-5. **Speech Output**: Browser Speech Synthesis provides audio feedback
+4. **MediaPipe Hand Tracking**: Real-time gesture recognition for sign language
+5. **Gemma 3n Analysis**: Advanced scene understanding and natural language description
+6. **Speech Output**: Browser Speech Synthesis provides audio feedback
 
 ### Supported Objects
 
@@ -169,6 +200,8 @@ VoiceVision can identify 80+ categories including:
 - **Independence**: Reduces reliance on others for environmental information
 - **Safety**: Proactive obstacle detection and navigation guidance
 - **Dignity**: Private, personal AI companion that doesn't require assistance requests
+- **Deaf-Blind Support**: Sign language gestures enable interaction for users with multiple sensory impairments
+- **Universal Design**: Accessible via keyboard, touch, voice, and gesture interfaces
 - **Global Reach**: Offline capability ensures accessibility anywhere
 
 ### Use Case Examples

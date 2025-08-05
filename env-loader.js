@@ -14,28 +14,35 @@
       window.location.hostname === "127.0.0.1" ||
       window.location.protocol === "file:";
 
+    // Check if we're on Vercel
+    const isVercel =
+      window.location.hostname.includes(".vercel.app") ||
+      window.location.hostname.includes("vercel.app");
+
     let envVars = {
       NODE_ENV: isDev ? "development" : "production",
       DEBUG_MODE: isDev ? "true" : "false",
     };
 
-    // For development, you can set this directly
-    // In production, this should come from your deployment environment
+    // Load API key based on environment
     if (isDev) {
-      // Load from local environment or prompt user
+      // Development: Load from localStorage or prompt user
       const apiKey =
         localStorage.getItem("GOOGLE_AI_API_KEY") ||
-        prompt("Please enter your Google AI API Key:") ||
+        prompt("Please enter your Google AI API Key for development:") ||
         "";
 
       if (apiKey) {
         localStorage.setItem("GOOGLE_AI_API_KEY", apiKey);
         envVars.GOOGLE_AI_API_KEY = apiKey;
       }
+    } else if (isVercel) {
+      // Vercel production: API key should be set via environment variables
+      // This will be injected during build time or fetched from API
+      envVars.GOOGLE_AI_API_KEY = window.VERCEL_ENV_GOOGLE_AI_API_KEY || "";
     } else {
-      // In production, this should be injected by your build process
-      // Never hardcode API keys in production code
-      envVars.GOOGLE_AI_API_KEY = process.env.GOOGLE_AI_API_KEY || "";
+      // Other production environments
+      envVars.GOOGLE_AI_API_KEY = window.GOOGLE_AI_API_KEY || "";
     }
 
     // Make environment variables available

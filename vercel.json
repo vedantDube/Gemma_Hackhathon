@@ -1,0 +1,48 @@
+{
+  "version": 2,
+  "name": "voicevision",
+  "builds": [
+    {
+      "src": "src/server.ts",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "voicevision-enhanced.html",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "config.js",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "env-loader.js",
+      "use": "@vercel/static"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/src/server.ts"
+    },
+    {
+      "src": "/(.*\\.(js|css|html|png|jpg|jpeg|gif|svg|ico))",
+      "dest": "/$1"
+    },
+    {
+      "src": "/",
+      "dest": "/voicevision-enhanced.html"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/voicevision-enhanced.html"
+    }
+  ],
+  "env": {
+    "GOOGLE_AI_API_KEY": "@google_ai_api_key"
+  },
+  "functions": {
+    "src/server.ts": {
+      "maxDuration": 30
+    }
+  }
+}

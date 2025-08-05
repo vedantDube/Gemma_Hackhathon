@@ -1153,8 +1153,21 @@ Forneça uma resposta clara e organizada que ajude a pessoa a entender o que est
               true
             );
 
-            // Initialize configuration
-            const config = new VoiceVisionConfig();
+            // Initialize configuration - wait for it to be ready
+            let config = window.voiceVisionConfig;
+            if (!config) {
+              console.log("⏳ Waiting for VoiceVision config to initialize...");
+              // Wait up to 3 seconds for config to be ready
+              for (let i = 0; i < 30; i++) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+                config = window.voiceVisionConfig;
+                if (config) break;
+              }
+              if (!config) {
+                console.log("🆘 Config not ready, creating new instance");
+                config = new VoiceVisionConfig();
+              }
+            }
             
             // Get API key from configuration
             let apiKey;
@@ -1186,9 +1199,24 @@ Forneça uma resposta clara e organizada que ajude a pessoa a entender o que est
               this.gemmaModel = null;
             }
 
-            // Load TensorFlow COCO-SSD model for object detection
-            this.cocoModel = await cocoSsd.load();
-            console.log("✅ Object detection model loaded");
+            // Load TensorFlow COCO-SSD model for object detection with WebGL fallback
+            try {
+              // Check if WebGL is available
+              const canvas = document.createElement('canvas');
+              const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+              
+              if (!gl) {
+                console.warn("⚠️ WebGL not available, using CPU backend for TensorFlow.js");
+                await tf.setBackend('cpu');
+              }
+              
+              this.cocoModel = await cocoSsd.load();
+              console.log("✅ Object detection model loaded");
+            } catch (error) {
+              console.warn("⚠️ Failed to load TensorFlow model:", error.message);
+              console.warn("Object detection will be disabled");
+              this.cocoModel = null;
+            }
 
             // Initialize Tesseract worker for OCR
             this.tesseractWorker = await Tesseract.createWorker("eng");
@@ -2974,42 +3002,69 @@ Enter the number of the voice you want to use:`;
         }
 
         updateAPIKey() {
-          const config = new VoiceVisionConfig();
-          const hasApiKey = !!config.get('GOOGLE_AI_API_KEY');
-          const isDev = config.isDevelopment();
-          
-          let message = "🔑 API Key Configuration:\n\n";
-          
-          if (hasApiKey) {
-            message += "✅ Google AI API key is configured and ready!\n";
-            message += "All Gemma 3n AI features are available.\n\n";
-          } else {
-            message += "⚠️ Google AI API key is not configured.\n";
-            message += "Some AI features may be limited.\n\n";
+          try {
+            // Try to use the global config instance first, or create a new one
+            const config = window.voiceVisionConfig || new VoiceVisionConfig();
+            const hasApiKey = !!config.get('GOOGLE_AI_API_KEY');
+            const isDev = config.isDevelopment();
             
-            if (isDev) {
-              message += "To configure your API key:\n";
-              message += "1. Get an API key from Google AI Studio\n";
-              message += "2. Add it to your .env file:\n";
-              message += "   GOOGLE_AI_API_KEY=your_api_key_here\n";
-              message += "3. Reload the application\n\n";
+            let message = "🔑 API Key Configuration:\n\n";
+            
+            if (hasApiKey) {
+              message += "✅ Google AI API key is configured and ready!\n";
+              message += "All Gemma 3n AI features are available.\n\n";
+            } else {
+              message += "⚠️ Google AI API key is not configured.\n";
+              message += "Some AI features may be limited.\n\n";
+              
+              if (isDev) {
+                message += "To configure your API key:\n";
+                message += "1. Get an API key from Google AI Studio\n";
+                message += "2. Add it to your .env file:\n";
+                message += "   GOOGLE_AI_API_KEY=your_api_key_here\n";
+                message += "3. Reload the application\n\n";
+              }
             }
+            
+            message += "Configuration Details:\n";
+            message += `• Environment: ${config.get('NODE_ENV')}\n`;
+            message += `• Debug Mode: ${config.get('DEBUG_MODE')}\n`;
+            message += `• AI Model: ${config.get('AI_MODEL')}\n\n`;
+            
+            message += "All other AI models (OCR, Object Detection, Sign Language) ";
+            message += "will work regardless of the API key configuration.";
+            
+            alert(message);
+          } catch (error) {
+            console.error('Error loading configuration:', error);
+            
+            // Fallback message if config loading fails
+            const fallbackMessage = "🔑 API Key Configuration:\n\n" +
+              "⚠️ Configuration system not fully loaded.\n" +
+              "The application will use fallback settings.\n\n" +
+              "Features available:\n" +
+              "• OCR text reading\n" +
+              "• Sign language recognition\n" +
+              "• Basic object detection\n" +
+              "• Voice controls\n\n" +
+              "For full AI features, ensure your API key is properly configured.";
+            
+            alert(fallbackMessage);
           }
-          
-          message += "Configuration Details:\n";
-          message += `• Environment: ${config.get('NODE_ENV')}\n`;
-          message += `• Debug Mode: ${config.get('DEBUG_MODE')}\n`;
-          message += `• AI Model: ${config.get('AI_MODEL')}\n\n`;
-          
-          message += "All other AI models (OCR, Object Detection, Sign Language) ";
-          message += "will work regardless of the API key configuration.";
-          
-          alert(message);
         }
       }
 
       // Initialize the interface when DOM is loaded
       document.addEventListener("DOMContentLoaded", () => {
+        // Ensure configuration is available
+        if (typeof VoiceVisionConfig === 'undefined') {
+          console.warn('VoiceVisionConfig not loaded, some features may be limited');
+        } else if (!window.voiceVisionConfig) {
+          // Create global config instance if it doesn't exist
+          window.voiceVisionConfig = new VoiceVisionConfig();
+        }
+        
+        // Initialize the main interface
         new VoiceVisionInterface();
       });
     </script>

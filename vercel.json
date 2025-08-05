@@ -1,6 +1,5 @@
 {
   "version": 2,
-  "name": "voicevision",
   "builds": [
     {
       "src": "src/server.ts",
@@ -36,13 +35,5 @@
       "src": "/(.*)",
       "dest": "/voicevision-enhanced.html"
     }
-  ],
-  "env": {
-    "GOOGLE_AI_API_KEY": "@google_ai_api_key"
-  },
-  "functions": {
-    "src/server.ts": {
-      "maxDuration": 30
-    }
-  }
+  ]
 }

@@ -39,7 +39,21 @@
     } else if (isVercel) {
       // Vercel production: API key should be set via environment variables
       // This will be injected during build time or fetched from API
+      console.log(
+        `🔍 Vercel environment detected. VERCEL_ENV_GOOGLE_AI_API_KEY available: ${
+          window.VERCEL_ENV_GOOGLE_AI_API_KEY ? "YES" : "NO"
+        }`
+      );
       envVars.GOOGLE_AI_API_KEY = window.VERCEL_ENV_GOOGLE_AI_API_KEY || "";
+      if (envVars.GOOGLE_AI_API_KEY) {
+        console.log(
+          `✅ API Key loaded: ${envVars.GOOGLE_AI_API_KEY.substring(0, 10)}...`
+        );
+      } else {
+        console.error(
+          `❌ No API key found in window.VERCEL_ENV_GOOGLE_AI_API_KEY`
+        );
+      }
     } else {
       // Other production environments
       envVars.GOOGLE_AI_API_KEY = window.GOOGLE_AI_API_KEY || "";
@@ -47,6 +61,7 @@
 
     // Make environment variables available
     window.ENV = envVars;
+    console.log("🔧 window.ENV set to:", envVars);
 
     // Compatibility with Node.js-style process.env
     if (typeof window.process === "undefined") {

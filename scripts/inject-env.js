@@ -19,8 +19,8 @@ window.VERCEL_ENV_GOOGLE_AI_API_KEY = "${apiKey}";
 console.log("✅ Environment variables loaded from Vercel");
 `;
 
-  // Write the environment script
-  fs.writeFileSync(path.join(__dirname, "vercel-env.js"), envScript);
+  // Write the environment script to the root directory (parent of scripts)
+  fs.writeFileSync(path.join(__dirname, "..", "vercel-env.js"), envScript);
   console.log("✅ Environment variables injected for Vercel deployment");
 }
 

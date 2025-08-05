@@ -635,8 +635,8 @@
           <strong>🤟 Sign Language Gestures:</strong><br />
           <span class="shortcut">👆</span> Index finger - Describe Scene<br />
           <span class="shortcut">✌️</span> Two fingers - Read Text<br />
-          <span class="shortcut">�</span> Three fingers - Navigation Help<br />
-          <span class="shortcut">�🤙</span> Pinky finger - Identify Objects<br />
+          <span class="shortcut">🖗</span> Three fingers - Navigation Help<br />
+          <span class="shortcut">🤙</span> Pinky finger - Identify Objects<br />
           <span class="shortcut">💍</span> Ring finger - Voice Settings<br />
           <span class="shortcut">🖕</span> Middle finger - Language Settings<br />
           <span class="shortcut">🤏</span> Thumb + Index - Brightness<br />
@@ -649,6 +649,19 @@
           <span class="shortcut">✊</span> Closed fist - Pause/Resume<br />
           <span class="shortcut">🤘</span> Index + Ring - Help Tutorial<br />
           <span class="shortcut">🤙</span> Thumb + Pinky - Speech Speed
+          <br /><br />
+          <strong>🎤 Voice Commands for Settings:</strong><br />
+          <span class="shortcut">Voice Settings</span> "faster", "slower", "louder", "quieter", "next voice", "previous voice", "test voice"<br />
+          <span class="shortcut">Language Settings</span> "next language", "previous language", or say language name like "Spanish"<br />
+          <strong>🤟 Settings Gestures:</strong><br />
+          <span class="shortcut">👍</span> Thumbs up - Faster speech<br />
+          <span class="shortcut">👎</span> Thumbs down - Slower speech<br />
+          <span class="shortcut">👈</span> Point left - Previous voice/language<br />
+          <span class="shortcut">👉</span> Point right - Next voice<br />
+          <span class="shortcut">☝️</span> Point up - Next language<br />
+          <span class="shortcut">👇</span> Point down - Previous language<br />
+          <span class="shortcut">✌️</span> Peace sign - Test voice/Select language<br />
+          <span class="shortcut">✊</span> Closed fist - Exit settings</span>
         </div>
 
         <div class="features">
@@ -747,6 +760,19 @@
           this.emergencyMode = false;
           this.systemPaused = false;
           this.savedPhoto = null;
+          
+          // Settings Mode States
+          this.voiceSelectionMode = false;
+          this.languageSelectionMode = false;
+          this.voiceSelectionTimeout = null;
+          this.languageSelectionTimeout = null;
+          this.currentLanguageIndex = 0;
+          this.languageOptions = [];
+          this.currentVoiceIndex = 0;
+          
+          // Voice Recognition
+          this.recognition = null;
+          this.isProcessing = false;
 
           // Language Settings
           this.currentLanguage =
@@ -1014,6 +1040,7 @@ Forneça uma resposta clara e organizada que ajude a pessoa a entender o que est
 
           this.initializeLanguage();
           this.initializeVoices();
+          this.initializeVoiceRecognition();
           this.initializeAI();
           this.setupEventListeners();
           this.initializeSignLanguageButton();
@@ -1220,6 +1247,41 @@ Forneça uma resposta clara e organizada que ajude a pessoa a entender o que est
 
             // Also listen for voice changes (some browsers load voices asynchronously)
             speechSynthesis.onvoiceschanged = loadVoices;
+          }
+        }
+
+        initializeVoiceRecognition() {
+          // Initialize speech recognition for voice commands
+          if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+            const SpeechRecognition = window.webkitSpeechRecognition || window.SpeechRecognition;
+            this.recognition = new SpeechRecognition();
+            
+            this.recognition.continuous = true;
+            this.recognition.interimResults = false;
+            this.recognition.lang = this.currentLanguage + '-US';
+            
+            this.recognition.onstart = () => {
+              console.log('Voice recognition started');
+            };
+            
+            this.recognition.onerror = (event) => {
+              console.log('Voice recognition error:', event.error);
+            };
+            
+            this.recognition.onend = () => {
+              // Restart recognition if in settings mode
+              if (this.voiceSelectionMode || this.languageSelectionMode) {
+                setTimeout(() => {
+                  if (this.voiceSelectionMode || this.languageSelectionMode) {
+                    this.recognition.start();
+                  }
+                }, 100);
+              }
+            };
+            
+            console.log('✅ Voice recognition initialized');
+          } else {
+            console.log('Voice recognition not supported in this browser');
           }
         }
 
@@ -2114,6 +2176,12 @@ Enter the number of the voice you want to use:`;
           // Classify gestures based on finger patterns
           const pattern = fingersUp.join("");
 
+          // If in voice or language settings mode, check for additional gestures
+          if (this.voiceSelectionMode || this.languageSelectionMode) {
+            const settingsGesture = this.classifySettingsGesture(pattern, landmarks);
+            if (settingsGesture) return settingsGesture;
+          }
+
           switch (pattern) {
             case "01000": // Index finger only - Describe Scene
               return "describe";
@@ -2150,6 +2218,75 @@ Enter the number of the voice you want to use:`;
             default:
               return null;
           }
+        }
+
+        classifySettingsGesture(pattern, landmarks) {
+          // Additional gestures specific to settings navigation
+          
+          // Check for pointing gestures
+          const isPointingUp = this.isPointingDirection(landmarks, 'up');
+          const isPointingDown = this.isPointingDirection(landmarks, 'down');
+          const isPointingLeft = this.isPointingDirection(landmarks, 'left');
+          const isPointingRight = this.isPointingDirection(landmarks, 'right');
+          const isThumbsUp = this.isThumbsUp(landmarks);
+          const isThumbsDown = this.isThumbsDown(landmarks);
+          
+          if (this.voiceSelectionMode) {
+            if (isThumbsUp) return "voice_faster";
+            if (isThumbsDown) return "voice_slower";
+            if (isPointingLeft) return "voice_previous";
+            if (isPointingRight) return "voice_next";
+            if (pattern === "01100") return "voice_test"; // Peace sign for test
+            if (pattern === "00000") return "voice_exit"; // Closed fist to exit
+          }
+          
+          if (this.languageSelectionMode) {
+            if (isPointingUp) return "language_next";
+            if (isPointingDown) return "language_previous";
+            if (pattern === "01100") return "language_select"; // Peace sign to select
+            if (pattern === "00000") return "language_exit"; // Closed fist to exit
+          }
+          
+          return null;
+        }
+
+        isPointingDirection(landmarks, direction) {
+          // Simple direction detection based on index finger orientation
+          const indexTip = landmarks[8];
+          const indexBase = landmarks[5];
+          
+          const deltaX = indexTip.x - indexBase.x;
+          const deltaY = indexTip.y - indexBase.y;
+          
+          const threshold = 0.05;
+          
+          switch (direction) {
+            case 'up': return deltaY < -threshold && Math.abs(deltaX) < threshold;
+            case 'down': return deltaY > threshold && Math.abs(deltaX) < threshold;
+            case 'left': return deltaX < -threshold && Math.abs(deltaY) < threshold;
+            case 'right': return deltaX > threshold && Math.abs(deltaY) < threshold;
+            default: return false;
+          }
+        }
+
+        isThumbsUp(landmarks) {
+          // Thumb up, other fingers down
+          const thumbTip = landmarks[4];
+          const thumbBase = landmarks[3];
+          const indexTip = landmarks[8];
+          const indexBase = landmarks[5];
+          
+          return (thumbTip.y < thumbBase.y) && (indexTip.y > indexBase.y);
+        }
+
+        isThumbsDown(landmarks) {
+          // Thumb down, other fingers down
+          const thumbTip = landmarks[4];
+          const thumbBase = landmarks[3];
+          const indexTip = landmarks[8];
+          const indexBase = landmarks[5];
+          
+          return (thumbTip.y > thumbBase.y) && (indexTip.y > indexBase.y);
         }
 
         getMostCommonGesture() {
@@ -2191,6 +2328,16 @@ Enter the number of the voice you want to use:`;
             help: "Hand gesture detected: Opening help tutorial",
             save: "Hand gesture detected: Saving current description",
             speed: "Hand gesture detected: Adjusting speech speed",
+            voice_faster: "Voice settings: Increasing speed",
+            voice_slower: "Voice settings: Decreasing speed",
+            voice_previous: "Voice settings: Previous voice",
+            voice_next: "Voice settings: Next voice",
+            voice_test: "Voice settings: Testing current voice",
+            voice_exit: "Voice settings: Exiting settings",
+            language_next: "Language settings: Next language",
+            language_previous: "Language settings: Previous language",
+            language_select: "Language settings: Selecting current language",
+            language_exit: "Language settings: Exiting settings",
           };
 
           const message = gestureMessages[gesture];
@@ -2253,6 +2400,41 @@ Enter the number of the voice you want to use:`;
                 case "speed":
                   this.toggleSpeechSpeed();
                   break;
+                // Voice settings gestures
+                case "voice_faster":
+                  this.adjustVoiceSpeed(0.1);
+                  break;
+                case "voice_slower":
+                  this.adjustVoiceSpeed(-0.1);
+                  break;
+                case "voice_previous":
+                  this.cycleVoice(-1);
+                  break;
+                case "voice_next":
+                  this.cycleVoice(1);
+                  break;
+                case "voice_test":
+                  this.testCurrentVoice();
+                  break;
+                case "voice_exit":
+                  this.exitVoiceSettings();
+                  break;
+                // Language settings gestures
+                case "language_next":
+                  this.cycleLanguage(1);
+                  break;
+                case "language_previous":
+                  this.cycleLanguage(-1);
+                  break;
+                case "language_select":
+                  if (this.languageOptions && this.currentLanguageIndex >= 0) {
+                    const selectedLanguage = this.languageOptions[this.currentLanguageIndex];
+                    this.setLanguage(selectedLanguage);
+                  }
+                  break;
+                case "language_exit":
+                  this.exitLanguageSettings();
+                  break;
               }
             }, 1000); // Small delay to allow gesture message to be heard
           }
@@ -2311,6 +2493,262 @@ Enter the number of the voice you want to use:`;
             console.error("Navigation help error:", error);
             this.speak("Navigation assistance temporarily unavailable.");
           }
+        }
+
+        showVoiceSettings() {
+          if (this.isProcessing) return;
+          
+          // Cancel any ongoing speech first
+          if ('speechSynthesis' in window) {
+            speechSynthesis.cancel();
+          }
+          
+          const currentSpeed = this.voiceSettings.rate;
+          const currentVolume = this.voiceSettings.volume;
+          const voiceCount = this.availableVoices.length;
+          
+          this.speak(`Voice settings: Current speed is ${currentSpeed} times normal, volume is ${Math.round(currentVolume * 100)} percent. Say "faster" or "slower" to adjust speed, "louder" or "quieter" for volume, "next voice" or "previous voice" to change voice, "test voice" to hear current selection. Use sign language: thumbs up for faster, thumbs down for slower, point left for previous voice, point right for next voice.`);
+          
+          // Enable voice selection mode
+          this.voiceSelectionMode = true;
+          this.voiceSelectionTimeout = setTimeout(() => {
+            this.voiceSelectionMode = false;
+            this.speak("Voice settings mode ended.");
+          }, 30000); // 30 seconds timeout
+          
+          // Set up voice command recognition for voice settings
+          this.setupVoiceSettingsCommands();
+          
+          // Start voice recognition
+          if (this.recognition) {
+            try {
+              this.recognition.start();
+            } catch (e) {
+              console.log('Voice recognition already running');
+            }
+          }
+          
+          // Visual feedback
+          const voiceBtn = document.getElementById('voice-select-btn');
+          if (voiceBtn) {
+            voiceBtn.style.background = 'linear-gradient(135deg, #28a745, #20c997)';
+            voiceBtn.textContent = '🎤 Voice Settings Active';
+          }
+        }
+
+        showLanguageSettings() {
+          if (this.isProcessing) return;
+          
+          // Cancel any ongoing speech first
+          if ('speechSynthesis' in window) {
+            speechSynthesis.cancel();
+          }
+          
+          const languageOptions = [
+            "English", "Spanish", "French", "German", "Italian", 
+            "Portuguese", "Russian", "Chinese", "Japanese", "Korean", "Arabic", "Hindi"
+          ];
+          
+          const currentLanguage = this.currentLanguage;
+          const currentIndex = languageOptions.findIndex(lang => lang.toLowerCase() === currentLanguage.toLowerCase());
+          
+          this.speak(`Current language is ${currentLanguage}. Say "next language" to cycle forward, "previous language" to cycle backward, or say a specific language name like "Spanish" or "French". You can also use sign language: point up for next, point down for previous, or use the peace sign to confirm current selection.`);
+          
+          // Enable language selection mode
+          this.languageSelectionMode = true;
+          this.currentLanguageIndex = currentIndex >= 0 ? currentIndex : 0;
+          this.languageOptions = languageOptions;
+          
+          this.languageSelectionTimeout = setTimeout(() => {
+            this.languageSelectionMode = false;
+            this.speak("Language settings mode ended.");
+          }, 30000); // 30 seconds timeout
+          
+          // Set up voice command recognition for language selection
+          this.setupLanguageSettingsCommands();
+          
+          // Start voice recognition
+          if (this.recognition) {
+            try {
+              this.recognition.start();
+            } catch (e) {
+              console.log('Voice recognition already running');
+            }
+          }
+          
+          // Visual feedback
+          const langBtn = document.getElementById('language-btn');
+          if (langBtn) {
+            langBtn.style.background = 'linear-gradient(135deg, #28a745, #20c997)';
+            langBtn.textContent = `🌍 Language: ${languageOptions[this.currentLanguageIndex]}`;
+          }
+        }
+
+        setupVoiceSettingsCommands() {
+          // Enhanced voice recognition for voice settings
+          if (!this.recognition) return;
+          
+          const originalOnResult = this.recognition.onresult;
+          
+          this.recognition.onresult = (event) => {
+            if (!this.voiceSelectionMode) {
+              if (originalOnResult) originalOnResult(event);
+              return;
+            }
+            
+            const transcript = event.results[event.resultIndex][0].transcript.toLowerCase().trim();
+            
+            if (transcript.includes('faster') || transcript.includes('speed up')) {
+              this.adjustVoiceSpeed(0.1);
+            } else if (transcript.includes('slower') || transcript.includes('slow down')) {
+              this.adjustVoiceSpeed(-0.1);
+            } else if (transcript.includes('louder') || transcript.includes('volume up')) {
+              this.adjustVoiceVolume(0.1);
+            } else if (transcript.includes('quieter') || transcript.includes('volume down')) {
+              this.adjustVoiceVolume(-0.1);
+            } else if (transcript.includes('next voice')) {
+              this.cycleVoice(1);
+            } else if (transcript.includes('previous voice')) {
+              this.cycleVoice(-1);
+            } else if (transcript.includes('test voice')) {
+              this.testCurrentVoice();
+            } else if (transcript.includes('done') || transcript.includes('exit') || transcript.includes('close')) {
+              this.exitVoiceSettings();
+            }
+          };
+        }
+
+        setupLanguageSettingsCommands() {
+          // Enhanced voice recognition for language settings
+          if (!this.recognition) return;
+          
+          const originalOnResult = this.recognition.onresult;
+          
+          this.recognition.onresult = (event) => {
+            if (!this.languageSelectionMode) {
+              if (originalOnResult) originalOnResult(event);
+              return;
+            }
+            
+            const transcript = event.results[event.resultIndex][0].transcript.toLowerCase().trim();
+            
+            if (transcript.includes('next language')) {
+              this.cycleLanguage(1);
+            } else if (transcript.includes('previous language')) {
+              this.cycleLanguage(-1);
+            } else if (transcript.includes('done') || transcript.includes('exit') || transcript.includes('close')) {
+              this.exitLanguageSettings();
+            } else {
+              // Check for specific language names
+              const requestedLanguage = this.languageOptions.find(lang => 
+                transcript.includes(lang.toLowerCase())
+              );
+              if (requestedLanguage) {
+                this.setLanguage(requestedLanguage);
+              }
+            }
+          };
+        }
+
+        adjustVoiceSpeed(delta) {
+          this.voiceSettings.rate = Math.max(0.1, Math.min(3.0, this.voiceSettings.rate + delta));
+          localStorage.setItem('voicevision_speed', this.voiceSettings.rate.toString());
+          this.speak(`Speed adjusted to ${this.voiceSettings.rate.toFixed(1)} times normal.`);
+        }
+
+        adjustVoiceVolume(delta) {
+          this.voiceSettings.volume = Math.max(0.0, Math.min(1.0, this.voiceSettings.volume + delta));
+          localStorage.setItem('voicevision_volume', this.voiceSettings.volume.toString());
+          this.speak(`Volume adjusted to ${Math.round(this.voiceSettings.volume * 100)} percent.`);
+        }
+
+        cycleVoice(direction) {
+          if (this.availableVoices.length === 0) {
+            this.speak("No voices available.");
+            return;
+          }
+          
+          const currentIndex = this.availableVoices.findIndex(v => v === this.selectedVoice);
+          let newIndex = currentIndex + direction;
+          
+          if (newIndex >= this.availableVoices.length) newIndex = 0;
+          if (newIndex < 0) newIndex = this.availableVoices.length - 1;
+          
+          this.selectedVoice = this.availableVoices[newIndex];
+          localStorage.setItem('voicevision_voice', this.selectedVoice.name);
+          
+          this.speak(`Voice changed to ${this.selectedVoice.name}`);
+        }
+
+        testCurrentVoice() {
+          if (this.selectedVoice) {
+            this.speak(`This is the current voice: ${this.selectedVoice.name}. How does it sound?`);
+          } else {
+            this.speak("No voice selected.");
+          }
+        }
+
+        cycleLanguage(direction) {
+          this.currentLanguageIndex += direction;
+          
+          if (this.currentLanguageIndex >= this.languageOptions.length) {
+            this.currentLanguageIndex = 0;
+          }
+          if (this.currentLanguageIndex < 0) {
+            this.currentLanguageIndex = this.languageOptions.length - 1;
+          }
+          
+          const newLanguage = this.languageOptions[this.currentLanguageIndex];
+          this.speak(`Language option: ${newLanguage}. Say "select" to choose this language.`);
+          
+          // Update button text
+          const langBtn = document.getElementById('language-btn');
+          if (langBtn) {
+            langBtn.textContent = `🌍 Language: ${newLanguage}`;
+          }
+        }
+
+        setLanguage(language) {
+          this.currentLanguage = language.toLowerCase();
+          localStorage.setItem('voicevision_language', this.currentLanguage);
+          
+          // Find and set appropriate voice for the language
+          this.setVoiceForLanguage();
+          
+          this.speak(`Language changed to ${language}. Voice settings have been updated accordingly.`);
+          this.exitLanguageSettings();
+        }
+
+        exitVoiceSettings() {
+          this.voiceSelectionMode = false;
+          if (this.voiceSelectionTimeout) {
+            clearTimeout(this.voiceSelectionTimeout);
+          }
+          
+          // Reset button appearance
+          const voiceBtn = document.getElementById('voice-select-btn');
+          if (voiceBtn) {
+            voiceBtn.style.background = '';
+            voiceBtn.textContent = '🎤 Voice Settings';
+          }
+          
+          this.speak("Voice settings saved.");
+        }
+
+        exitLanguageSettings() {
+          this.languageSelectionMode = false;
+          if (this.languageSelectionTimeout) {
+            clearTimeout(this.languageSelectionTimeout);
+          }
+          
+          // Reset button appearance
+          const langBtn = document.getElementById('language-btn');
+          if (langBtn) {
+            langBtn.style.background = '';
+            langBtn.textContent = '🌍 Language';
+          }
+          
+          this.speak("Language settings saved.");
         }
 
         adjustBrightness() {

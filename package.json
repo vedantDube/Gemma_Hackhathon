@@ -6,7 +6,7 @@
   "scripts": {
     "start": "npm run serve",
     "serve": "ts-node src/server.ts",
-    "build": "next build",
+    "build": "tsc",
     "dev": "npm run serve"
   },
   "keywords": [

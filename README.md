@@ -310,6 +310,75 @@ VoiceVision can identify 80+ categories including:
 - **Cross-Platform**: Both web and CLI interfaces for different user preferences
 - **Production Ready**: Comprehensive error handling and resource management
 
+## 🔧 Environment Configuration
+
+### Required Setup
+
+VoiceVision uses environment variables for configuration. Follow these steps to set up your environment:
+
+#### 1. Create .env File
+
+Create a `.env` file in the project root:
+
+```env
+# Google Generative AI API Key for Gemma/Gemini models
+GOOGLE_AI_API_KEY=your_api_key_here
+
+# Environment Configuration
+NODE_ENV=development
+DEBUG_MODE=false
+```
+
+#### 2. Get Google AI API Key
+
+1. Visit [Google AI Studio](https://makersuite.google.com/app/apikey)
+2. Create a new API key
+3. Copy the API key to your `.env` file
+
+#### 3. File Structure
+
+```
+gemma_impact/
+├── .env                          # Environment variables (create this)
+├── voicevision-enhanced.html     # Main application
+├── config.js                     # Configuration management
+├── env-loader.js                 # Environment loader
+└── README.md                     # Documentation
+```
+
+### Environment Variables Reference
+
+| Variable            | Required | Description                                      | Default       |
+| ------------------- | -------- | ------------------------------------------------ | ------------- |
+| `GOOGLE_AI_API_KEY` | Yes      | Google AI API key for Gemini/Gemma models        | -             |
+| `NODE_ENV`          | No       | Environment mode (`development` or `production`) | `development` |
+| `DEBUG_MODE`        | No       | Enable debug logging (`true` or `false`)         | `false`       |
+
+### Features by Configuration
+
+#### With Google AI API Key ✨
+
+- ✅ Advanced scene analysis with Gemma 3n
+- ✅ Intelligent object identification
+- ✅ Context-aware descriptions
+- ✅ Multi-language support
+- ✅ All basic features
+
+#### Without Google AI API Key ⚠️
+
+- ✅ OCR text reading
+- ✅ Sign language recognition
+- ✅ Basic object detection
+- ✅ Voice controls
+- ❌ Advanced AI analysis
+
+### Security Notes
+
+- Never commit `.env` files to version control
+- Add `.env` to your `.gitignore`
+- Use proper environment variable management in production
+- API keys should be kept secure and private
+
 ## 🤝 Contributing
 
 We welcome contributions from developers, accessibility experts, and users. See our [Contributing Guidelines](CONTRIBUTING.md) for details.
@@ -323,18 +392,3 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **Google Gemma Team**: For the revolutionary Gemma 3n multimodal AI model
 - **Accessibility Community**: For guidance on real-world needs and requirements
 - **Open Source Contributors**: Building the foundation for accessible technology
-
-## 📞 Contact & Support
-
-- **Project Website**: [voicevision.ai](https://voicevision.ai)
-- **Documentation**: [docs.voicevision.ai](https://docs.voicevision.ai)
-- **Support Email**: support@voicevision.ai
-- **Community Discord**: [VoiceVision Community](https://discord.gg/voicevision)
-
----
-
-**VoiceVision**: _Empowering independence through AI-powered accessibility_
-
-![Built with Gemma](https://img.shields.io/badge/Built%20with-Gemma%203n-success.svg)
-![Accessibility First](https://img.shields.io/badge/Accessibility-First-blue.svg)
-![Privacy Preserving](https://img.shields.io/badge/Privacy-Preserving-green.svg)

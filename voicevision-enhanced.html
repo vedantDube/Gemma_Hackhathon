@@ -15,6 +15,11 @@
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
+    
+    <!-- Environment Configuration -->
+    <script src="env-loader.js"></script>
+    <script src="config.js"></script>
+    
     <!-- Add Google Generative AI for Gemma 3n -->
     <script type="importmap">
       {
@@ -1147,18 +1152,38 @@ Forneça uma resposta clara e organizada que ajude a pessoa a entender o que est
               true
             );
 
-            // Initialize Google Generative AI with Gemma 3n
-            const API_KEY = "AIzaSyAucfVLeCDWbuxe0Osfka0U83Plqc0Bbog"; // Pre-configured API key
+            // Initialize configuration
+            const config = new VoiceVisionConfig();
+            
+            // Get API key from configuration
+            let apiKey;
+            try {
+              apiKey = config.getGoogleAIKey();
+            } catch (error) {
+              console.error('API Key configuration error:', error.message);
+              this.updateStatus(
+                "⚠️ Google AI API key not configured - some features may be limited"
+              );
+              
+              // Continue with other models even if Gemini is not available
+              apiKey = null;
+            }
 
-            this.genAI = new GoogleGenerativeAI(API_KEY);
-            this.gemmaModel = this.genAI.getGenerativeModel({
-              model: "gemini-1.5-flash", // Using latest available model
-              generationConfig: {
-                temperature: 0.7,
-                maxOutputTokens: 1024,
-              },
-            });
-            console.log("✅ Gemma 3n AI model loaded");
+            // Initialize Google Generative AI with Gemma 3n only if API key is available
+            if (apiKey) {
+              this.genAI = new GoogleGenerativeAI(apiKey);
+              this.gemmaModel = this.genAI.getGenerativeModel({
+                model: config.get('AI_MODEL') || "gemini-1.5-flash",
+                generationConfig: {
+                  temperature: config.get('AI_TEMPERATURE') || 0.7,
+                  maxOutputTokens: config.get('AI_MAX_TOKENS') || 1024,
+                },
+              });
+              console.log("✅ Gemma 3n AI model loaded");
+            } else {
+              console.warn("⚠️ Gemma 3n AI model not available - API key not configured");
+              this.gemmaModel = null;
+            }
 
             // Load TensorFlow COCO-SSD model for object detection
             this.cocoModel = await cocoSsd.load();
@@ -2948,12 +2973,37 @@ Enter the number of the voice you want to use:`;
         }
 
         updateAPIKey() {
-          alert(
-            "🔑 API Key Information:\n\n" +
-              "The Gemma 3n API key is pre-configured in this application.\n" +
-              "No additional setup is required - Gemma 3n features are ready to use!\n\n" +
-              "All AI models will initialize automatically when you start the camera."
-          );
+          const config = new VoiceVisionConfig();
+          const hasApiKey = !!config.get('GOOGLE_AI_API_KEY');
+          const isDev = config.isDevelopment();
+          
+          let message = "🔑 API Key Configuration:\n\n";
+          
+          if (hasApiKey) {
+            message += "✅ Google AI API key is configured and ready!\n";
+            message += "All Gemma 3n AI features are available.\n\n";
+          } else {
+            message += "⚠️ Google AI API key is not configured.\n";
+            message += "Some AI features may be limited.\n\n";
+            
+            if (isDev) {
+              message += "To configure your API key:\n";
+              message += "1. Get an API key from Google AI Studio\n";
+              message += "2. Add it to your .env file:\n";
+              message += "   GOOGLE_AI_API_KEY=your_api_key_here\n";
+              message += "3. Reload the application\n\n";
+            }
+          }
+          
+          message += "Configuration Details:\n";
+          message += `• Environment: ${config.get('NODE_ENV')}\n`;
+          message += `• Debug Mode: ${config.get('DEBUG_MODE')}\n`;
+          message += `• AI Model: ${config.get('AI_MODEL')}\n\n`;
+          
+          message += "All other AI models (OCR, Object Detection, Sign Language) ";
+          message += "will work regardless of the API key configuration.";
+          
+          alert(message);
         }
       }
 
